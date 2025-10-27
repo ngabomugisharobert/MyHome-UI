@@ -28,11 +28,21 @@ import {
   AccountCircle,
   ChevronLeft,
   ChevronRight,
+  Security,
+  Assignment,
+  Schedule,
+  Person,
+  Contacts,
+  Description,
+  Task,
+  Assessment,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import MyHomeLogo from '../common/MyHomeLogo';
 import ThemeToggle from '../common/ThemeToggle';
+import SessionIndicator from '../common/SessionIndicator';
+import FacilityNavigation from '../facility/FacilityNavigation';
 
 const drawerWidth = 200;
 const collapsedDrawerWidth = 60;
@@ -70,32 +80,189 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     navigate('/login');
   };
 
-  const menuItems = [
-    {
-      text: 'Dashboard',
-      icon: <Dashboard />,
-      path: '/dashboard',
-      roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
-    },
-    {
-      text: 'Users',
-      icon: <People />,
-      path: '/users',
-      roles: ['admin', 'supervisor'],
-    },
-    {
-      text: 'Facilities',
-      icon: <Business />,
-      path: '/facilities',
-      roles: ['admin', 'supervisor'],
-    },
-    {
-      text: 'Settings',
-      icon: <Settings />,
-      path: '/settings',
-      roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
-    },
-  ];
+  // Get menu items based on user type
+  const getMenuItems = () => {
+    // Facility owners get facility-specific navigation
+    if (user?.facilityId) {
+      return [
+        {
+          text: 'Dashboard',
+          icon: <Dashboard />,
+          path: '/dashboard',
+          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
+        },
+        {
+          text: 'Residents',
+          icon: <Person />,
+          path: '/facility/residents',
+          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
+        },
+        {
+          text: 'Contacts',
+          icon: <Contacts />,
+          path: '/facility/contacts',
+          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
+        },
+        {
+          text: 'Documents',
+          icon: <Description />,
+          path: '/facility/documents',
+          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
+        },
+        {
+          text: 'Tasks',
+          icon: <Task />,
+          path: '/facility/tasks',
+          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
+        },
+        {
+          text: 'Inspections',
+          icon: <Assessment />,
+          path: '/facility/inspections',
+          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
+        },
+        {
+          text: 'Facility Users',
+          icon: <People />,
+          path: '/facility/users',
+          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
+        },
+      ];
+    }
+
+    // Role-specific navigation
+    const baseItems = [
+      {
+        text: 'Dashboard',
+        icon: <Dashboard />,
+        path: '/dashboard',
+        roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
+      },
+    ];
+
+    // Admin-specific items
+    if (user?.role === 'admin') {
+      return [
+        ...baseItems,
+        {
+          text: 'Users',
+          icon: <People />,
+          path: '/users',
+          roles: ['admin'],
+        },
+        {
+          text: 'Facilities',
+          icon: <Business />,
+          path: '/facilities',
+          roles: ['admin'],
+        },
+        {
+          text: 'Team Management',
+          icon: <People />,
+          path: '/team-management',
+          roles: ['admin'],
+        },
+        {
+          text: 'Role Management',
+          icon: <Assignment />,
+          path: '/role-management',
+          roles: ['admin'],
+        },
+        {
+          text: 'Access Management',
+          icon: <Security />,
+          path: '/access-management',
+          roles: ['admin'],
+        },
+      ];
+    }
+
+    // Supervisor-specific items
+    if (user?.role === 'supervisor') {
+      return [
+        ...baseItems,
+        {
+          text: 'Users',
+          icon: <People />,
+          path: '/users',
+          roles: ['supervisor'],
+        },
+        {
+          text: 'Facilities',
+          icon: <Business />,
+          path: '/facilities',
+          roles: ['supervisor'],
+        },
+        {
+          text: 'Team Management',
+          icon: <People />,
+          path: '/team-management',
+          roles: ['supervisor'],
+        },
+        {
+          text: 'Access Management',
+          icon: <Security />,
+          path: '/access-management',
+          roles: ['supervisor'],
+        },
+      ];
+    }
+
+    // Doctor-specific items
+    if (user?.role === 'doctor') {
+      return [
+        ...baseItems,
+        {
+          text: 'Patients',
+          icon: <People />,
+          path: '/patients',
+          roles: ['doctor'],
+        },
+        {
+          text: 'Appointments',
+          icon: <Schedule />,
+          path: '/appointments',
+          roles: ['doctor'],
+        },
+        {
+          text: 'Medical Records',
+          icon: <Assignment />,
+          path: '/medical-records',
+          roles: ['doctor'],
+        },
+      ];
+    }
+
+    // Caregiver-specific items
+    if (user?.role === 'caregiver') {
+      return [
+        ...baseItems,
+        {
+          text: 'Residents',
+          icon: <People />,
+          path: '/residents',
+          roles: ['caregiver'],
+        },
+        {
+          text: 'Tasks',
+          icon: <Assignment />,
+          path: '/tasks',
+          roles: ['caregiver'],
+        },
+        {
+          text: 'Schedule',
+          icon: <Schedule />,
+          path: '/schedule',
+          roles: ['caregiver'],
+        },
+      ];
+    }
+
+    // Default fallback
+    return baseItems;
+  };
+
+  const menuItems = getMenuItems();
 
   const filteredMenuItems = menuItems.filter(item =>
     user?.role && item.roles.includes(user.role)
@@ -215,6 +382,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               <Notifications />
             </Badge>
           </IconButton>
+          <SessionIndicator />
           <ThemeToggle />
           <IconButton
             size="large"

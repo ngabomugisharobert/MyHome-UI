@@ -34,6 +34,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginCredentials>();
 
@@ -52,6 +53,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const fillCredentials = (email: string, password: string) => {
+    setValue('email', email);
+    setValue('password', password);
   };
 
   return (
@@ -146,18 +152,125 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           </form>
 
           <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Demo Accounts:
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
+              Test Credentials:
             </Typography>
-            <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-              Admin: admin@myhome.com / Admin123!
-            </Typography>
-            <Typography variant="caption" display="block">
-              Doctor: doctor@myhome.com / Doctor123!
-            </Typography>
-            <Typography variant="caption" display="block">
-              Caregiver: caregiver1@myhome.com / Caregiver123!
-            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, textAlign: 'left' }}>
+              <Box 
+                sx={{ 
+                  cursor: 'pointer', 
+                  p: 1, 
+                  borderRadius: 1, 
+                  '&:hover': { backgroundColor: 'action.hover' } 
+                }}
+                onClick={() => fillCredentials('admin@myhome.com', 'password123')}
+              >
+                <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
+                  Admin:
+                </Typography>
+                <Typography variant="caption" display="block">
+                  admin@myhome.com
+                </Typography>
+                <Typography variant="caption" display="block">
+                  password123
+                </Typography>
+              </Box>
+              <Box 
+                sx={{ 
+                  cursor: 'pointer', 
+                  p: 1, 
+                  borderRadius: 1, 
+                  '&:hover': { backgroundColor: 'action.hover' } 
+                }}
+                onClick={() => fillCredentials('doctor@myhome.com', 'password123')}
+              >
+                <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
+                  Doctor:
+                </Typography>
+                <Typography variant="caption" display="block">
+                  doctor@myhome.com
+                </Typography>
+                <Typography variant="caption" display="block">
+                  password123
+                </Typography>
+              </Box>
+              <Box 
+                sx={{ 
+                  cursor: 'pointer', 
+                  p: 1, 
+                  borderRadius: 1, 
+                  '&:hover': { backgroundColor: 'action.hover' } 
+                }}
+                onClick={() => fillCredentials('caregiver@myhome.com', 'password123')}
+              >
+                <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
+                  Caregiver:
+                </Typography>
+                <Typography variant="caption" display="block">
+                  caregiver@myhome.com
+                </Typography>
+                <Typography variant="caption" display="block">
+                  password123
+                </Typography>
+              </Box>
+              <Box 
+                sx={{ 
+                  cursor: 'pointer', 
+                  p: 1, 
+                  borderRadius: 1, 
+                  '&:hover': { backgroundColor: 'action.hover' } 
+                }}
+                onClick={() => fillCredentials('supervisor@myhome.com', 'password123')}
+              >
+                <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
+                  Supervisor:
+                </Typography>
+                <Typography variant="caption" display="block">
+                  supervisor@myhome.com
+                </Typography>
+                <Typography variant="caption" display="block">
+                  password123
+                </Typography>
+              </Box>
+              <Box 
+                sx={{ 
+                  cursor: 'pointer', 
+                  p: 1, 
+                  borderRadius: 1, 
+                  '&:hover': { backgroundColor: 'action.hover' } 
+                }}
+                onClick={() => fillCredentials('owner@myhome.com', 'password123')}
+              >
+                <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
+                  Facility Owner:
+                </Typography>
+                <Typography variant="caption" display="block">
+                  owner@myhome.com
+                </Typography>
+                <Typography variant="caption" display="block">
+                  password123
+                </Typography>
+              </Box>
+              <Box 
+                sx={{ 
+                  cursor: 'pointer', 
+                  p: 1, 
+                  borderRadius: 1, 
+                  '&:hover': { backgroundColor: 'action.hover' } 
+                }}
+                onClick={() => fillCredentials('caregiver2@myhome.com', 'password123')}
+              >
+                <Typography variant="caption" display="block" sx={{ fontWeight: 'bold' }}>
+                  Caregiver 2:
+                </Typography>
+                <Typography variant="caption" display="block">
+                  caregiver2@myhome.com
+                </Typography>
+                <Typography variant="caption" display="block">
+                  password123
+                </Typography>
+              </Box>
+            </Box>
           </Box>
         </CardContent>
       </Card>

@@ -16,6 +16,17 @@ import {
   Alert,
   CircularProgress,
   Avatar,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormControlLabel,
+  Switch,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
 } from '@mui/material';
 import {
   Add,
@@ -25,17 +36,33 @@ import {
   Phone,
   Email,
   People,
+  Person,
+  Security,
+  TrendingUp,
+  Assignment,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { Facility, FacilityListResponse } from '../types';
 import api from '../services/api';
 
 const Facilities: React.FC = () => {
+  const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    licenseNumber: '',
+    capacity: 0,
+    ownerId: '',
+  });
 
   useEffect(() => {
     fetchFacilities();
@@ -44,6 +71,13 @@ const Facilities: React.FC = () => {
   const fetchFacilities = async () => {
     try {
       setLoading(true);
+      
+      // Only admin and supervisor can access all facilities
+      if (user?.role !== 'admin' && user?.role !== 'supervisor') {
+        setError('Access denied: Admin or Supervisor role required');
+        return;
+      }
+      
       const response = await api.get<FacilityListResponse>('/facilities');
       if (response.data.success) {
         setFacilities(response.data.data.facilities);
@@ -57,17 +91,62 @@ const Facilities: React.FC = () => {
 
   const handleEditFacility = (facility: Facility) => {
     setSelectedFacility(facility);
+    setFormData({
+      name: facility.name,
+      address: facility.address || '',
+      phone: facility.phone || '',
+      email: facility.email || '',
+      licenseNumber: facility.licenseNumber || '',
+      capacity: facility.capacity,
+      ownerId: facility.ownerId || '',
+    });
     setOpenDialog(true);
   };
 
-  // const handleDeleteFacility = (facility: Facility) => {
-  //   // Implement delete functionality
-  //   console.log('Delete facility:', facility);
-  // };
+  const handleCreateFacility = () => {
+    setSelectedFacility(null);
+    setFormData({
+      name: '',
+      address: '',
+      phone: '',
+      email: '',
+      licenseNumber: '',
+      capacity: 0,
+      ownerId: '',
+    });
+    setOpenDialog(true);
+  };
+
+  const handleSaveFacility = async () => {
+    try {
+      if (selectedFacility) {
+        // Update existing facility
+        await api.put(`/facilities/${selectedFacility.id}`, formData);
+        showSuccess('Facility updated successfully');
+      } else {
+        // Create new facility
+        await api.post('/facilities', formData);
+        showSuccess('Facility created successfully');
+      }
+      setOpenDialog(false);
+      fetchFacilities();
+    } catch (err: any) {
+      showError(err.response?.data?.message || 'Failed to save facility');
+    }
+  };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedFacility(null);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'success';
+      case 'inactive': return 'error';
+      case 'pending': return 'warning';
+      default: return 'default';
+    }
   };
 
   if (loading) {
@@ -85,7 +164,7 @@ const Facilities: React.FC = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setOpenDialog(true)}
+          onClick={handleCreateFacility}
         >
           Add Facility
         </Button>
@@ -110,11 +189,21 @@ const Facilities: React.FC = () => {
                     <Typography variant="h6" component="div">
                       {facility.name}
                     </Typography>
-                    <Chip
-                      label={facility.isActive ? 'Active' : 'Inactive'}
-                      color={facility.isActive ? 'success' : 'error'}
-                      size="small"
-                    />
+                    <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                      <Chip
+                        label={facility.status.toUpperCase()}
+                        color={getStatusColor(facility.status) as any}
+                        size="small"
+                      />
+                      {facility.owner && (
+                        <Chip
+                          icon={<Person />}
+                          label={`Owner: ${facility.owner.name}`}
+                          variant="outlined"
+                          size="small"
+                        />
+                      )}
+                    </Box>
                   </Box>
                   <IconButton onClick={() => handleEditFacility(facility)}>
                     <Edit />
@@ -149,15 +238,25 @@ const Facilities: React.FC = () => {
                 )}
 
                 {facility.licenseNumber && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    License: {facility.licenseNumber}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Security sx={{ mr: 1, color: 'text.secondary' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      License: {facility.licenseNumber}
+                    </Typography>
+                  </Box>
                 )}
+
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <TrendingUp sx={{ mr: 1, color: 'text.secondary' }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Capacity: {facility.capacity}
+                  </Typography>
+                </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
                   <People sx={{ mr: 1, color: 'text.secondary' }} />
                   <Typography variant="body2" color="text.secondary">
-                    {facility.userCount || 0} users
+                    {facility.userCount || 0} staff members
                   </Typography>
                 </Box>
               </CardContent>
@@ -176,7 +275,8 @@ const Facilities: React.FC = () => {
             <TextField
               fullWidth
               label="Facility Name"
-              defaultValue={selectedFacility?.name || ''}
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               sx={{ mb: 2 }}
             />
             <TextField
@@ -184,32 +284,52 @@ const Facilities: React.FC = () => {
               label="Address"
               multiline
               rows={3}
-              defaultValue={selectedFacility?.address || ''}
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               sx={{ mb: 2 }}
             />
             <TextField
               fullWidth
               label="Phone"
-              defaultValue={selectedFacility?.phone || ''}
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               sx={{ mb: 2 }}
             />
             <TextField
               fullWidth
               label="Email"
               type="email"
-              defaultValue={selectedFacility?.email || ''}
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               sx={{ mb: 2 }}
             />
             <TextField
               fullWidth
               label="License Number"
-              defaultValue={selectedFacility?.licenseNumber || ''}
+              value={formData.licenseNumber}
+              onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Capacity"
+              type="number"
+              value={formData.capacity}
+              onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 0 })}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Owner ID (Optional)"
+              value={formData.ownerId}
+              onChange={(e) => setFormData({ ...formData, ownerId: e.target.value })}
+              helperText="Enter the user ID of the facility owner"
             />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button variant="contained">
+          <Button variant="contained" onClick={handleSaveFacility}>
             {selectedFacility ? 'Update' : 'Create'}
           </Button>
         </DialogActions>

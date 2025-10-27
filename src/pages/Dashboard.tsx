@@ -21,9 +21,32 @@ import {
   Schedule,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import FeatureCards from '../components/features/FeatureCards';
+import AdminDashboard from '../components/dashboards/AdminDashboard';
+import SupervisorDashboard from '../components/dashboards/SupervisorDashboard';
+import DoctorDashboard from '../components/dashboards/DoctorDashboard';
+import CaregiverDashboard from '../components/dashboards/CaregiverDashboard';
+import TestCredentials from '../components/common/TestCredentials';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+
+  // Show role-specific dashboards
+  if (user?.role === 'admin') {
+    return <AdminDashboard />;
+  }
+
+  if (user?.role === 'supervisor') {
+    return <SupervisorDashboard />;
+  }
+
+  if (user?.role === 'doctor') {
+    return <DoctorDashboard />;
+  }
+
+  if (user?.role === 'caregiver') {
+    return <CaregiverDashboard />;
+  }
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -181,6 +204,17 @@ const Dashboard: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Test Credentials for Development */}
+      <TestCredentials />
+
+      {/* Feature Cards */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h5" component="h2" gutterBottom fontWeight="bold">
+          System Features
+        </Typography>
+        <FeatureCards />
+      </Box>
     </Box>
   );
 };

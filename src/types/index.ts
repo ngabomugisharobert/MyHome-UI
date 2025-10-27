@@ -32,11 +32,30 @@ export interface Facility {
   phone?: string;
   email?: string;
   licenseNumber?: string;
+  capacity: number;
+  status: 'active' | 'inactive' | 'pending';
+  ownerId?: string;
+  owner?: {
+    id: string;
+    name: string;
+    email: string;
+  };
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
   userCount?: number;
   users?: User[];
+}
+
+export interface FacilityAccess {
+  facilities: Facility[];
+  userRole: string;
+  currentFacilityId?: string;
+}
+
+export interface FacilitySelection {
+  facilityId: string | null;
+  facility?: Facility;
 }
 
 export interface AuthTokens {

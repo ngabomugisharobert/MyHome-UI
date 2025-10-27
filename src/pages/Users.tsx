@@ -30,6 +30,7 @@ import { User, UserListResponse } from '../types';
 import api from '../services/api';
 
 const Users: React.FC = () => {
+  const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +45,13 @@ const Users: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      
+      // Only admin can access all users
+      if (user?.role !== 'admin') {
+        setError('Access denied: Admin role required');
+        return;
+      }
+      
       const response = await api.get<UserListResponse>('/users');
       if (response.data.success) {
         setUsers(response.data.data.users);

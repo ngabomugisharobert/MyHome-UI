@@ -36,6 +36,9 @@ import {
   Description,
   Task,
   Assessment,
+  Medication,
+  LocalHospital,
+  CalendarToday,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -127,6 +130,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           path: '/facility/users',
           roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
         },
+        {
+          text: 'Medications',
+          icon: <Medication />,
+          path: '/medications',
+          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
+        },
+        {
+          text: 'Care Plans',
+          icon: <LocalHospital />,
+          path: '/care-plans',
+          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
+        },
+        {
+          text: 'Schedules',
+          icon: <CalendarToday />,
+          path: '/schedules',
+          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
+        },
       ];
     }
 
@@ -174,6 +195,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           path: '/access-management',
           roles: ['admin'],
         },
+        {
+          text: 'Medications',
+          icon: <Medication />,
+          path: '/medications',
+          roles: ['admin'],
+        },
+        {
+          text: 'Care Plans',
+          icon: <LocalHospital />,
+          path: '/care-plans',
+          roles: ['admin'],
+        },
+        {
+          text: 'Schedules',
+          icon: <CalendarToday />,
+          path: '/schedules',
+          roles: ['admin'],
+        },
       ];
     }
 
@@ -205,6 +244,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           path: '/access-management',
           roles: ['supervisor'],
         },
+        {
+          text: 'Medications',
+          icon: <Medication />,
+          path: '/medications',
+          roles: ['supervisor'],
+        },
+        {
+          text: 'Care Plans',
+          icon: <LocalHospital />,
+          path: '/care-plans',
+          roles: ['supervisor'],
+        },
+        {
+          text: 'Schedules',
+          icon: <CalendarToday />,
+          path: '/schedules',
+          roles: ['supervisor'],
+        },
       ];
     }
 
@@ -230,6 +287,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           path: '/medical-records',
           roles: ['doctor'],
         },
+        {
+          text: 'Medications',
+          icon: <Medication />,
+          path: '/medications',
+          roles: ['doctor'],
+        },
+        {
+          text: 'Care Plans',
+          icon: <LocalHospital />,
+          path: '/care-plans',
+          roles: ['doctor'],
+        },
+        {
+          text: 'Schedules',
+          icon: <CalendarToday />,
+          path: '/schedules',
+          roles: ['doctor'],
+        },
       ];
     }
 
@@ -253,6 +328,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           text: 'Schedule',
           icon: <Schedule />,
           path: '/schedule',
+          roles: ['caregiver'],
+        },
+        {
+          text: 'Medications',
+          icon: <Medication />,
+          path: '/medications',
+          roles: ['caregiver'],
+        },
+        {
+          text: 'Care Plans',
+          icon: <LocalHospital />,
+          path: '/care-plans',
+          roles: ['caregiver'],
+        },
+        {
+          text: 'Schedules',
+          icon: <CalendarToday />,
+          path: '/schedules',
           roles: ['caregiver'],
         },
       ];

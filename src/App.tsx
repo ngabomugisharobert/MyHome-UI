@@ -17,6 +17,9 @@ import FacilityContacts from './pages/facility/FacilityContacts';
 import FacilityDocuments from './pages/facility/FacilityDocuments';
 import FacilityTasks from './pages/facility/FacilityTasks';
 import FacilityInspections from './pages/facility/FacilityInspections';
+import Medications from './pages/Medications';
+import CarePlans from './pages/CarePlans';
+import Schedules from './pages/Schedules';
 import { CircularProgress, Box } from '@mui/material';
 import ToastDisplay from './components/common/ToastProvider';
 
@@ -162,6 +165,37 @@ const App: React.FC = () => {
             element={
               user?.facilityId ? (
                 <FacilityUsers />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          {/* Healthcare-specific features */}
+          <Route
+            path="/medications"
+            element={
+              user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'doctor' || user?.role === 'caregiver' ? (
+                <Medications />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/care-plans"
+            element={
+              user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'doctor' || user?.role === 'caregiver' ? (
+                <CarePlans />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/schedules"
+            element={
+              user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'doctor' || user?.role === 'caregiver' ? (
+                <Schedules />
               ) : (
                 <Navigate to="/dashboard" replace />
               )

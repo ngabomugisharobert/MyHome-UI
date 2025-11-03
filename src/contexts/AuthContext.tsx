@@ -208,7 +208,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Show welcome message
         setTimeout(() => {
-          showSuccess(`Welcome back, ${userData.name}! You have successfully logged in to MyHome Healthcare Management System.`);
+          showSuccess(`Welcome back, ${userData.name}`);
         }, 500);
       } else {
         throw new Error(response.data.message || 'Login failed');

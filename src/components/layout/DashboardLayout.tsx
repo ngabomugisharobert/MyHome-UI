@@ -101,18 +101,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
         },
         {
-          text: 'Contacts',
-          icon: <Contacts />,
-          path: '/facility/contacts',
-          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
-        },
-        {
-          text: 'Documents',
-          icon: <Description />,
-          path: '/facility/documents',
-          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
-        },
-        {
           text: 'Tasks',
           icon: <Task />,
           path: '/facility/tasks',
@@ -131,23 +119,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
         },
         {
-          text: 'Medications',
-          icon: <Medication />,
-          path: '/medications',
-          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
-        },
-        {
-          text: 'Care Plans',
-          icon: <LocalHospital />,
-          path: '/care-plans',
-          roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
-        },
-        {
           text: 'Schedules',
           icon: <CalendarToday />,
           path: '/schedules',
           roles: ['admin', 'caregiver', 'doctor', 'supervisor'],
         },
+        // Note: Documents, Contacts, Medications, and Care Plans are now accessed via Resident Detail page
       ];
     }
 
@@ -452,6 +429,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         sx={{
           width: { sm: `calc(100% - ${desktopOpen ? drawerWidth : collapsedDrawerWidth}px)` },
           ml: { sm: `${desktopOpen ? drawerWidth : collapsedDrawerWidth}px` },
+          zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
       >
         <Toolbar>
@@ -477,6 +455,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </IconButton>
           <SessionIndicator />
           <ThemeToggle />
+          {user && (
+            <Box sx={{ mr: 1.5, display: { xs: 'none', sm: 'block' } }}>
+              <Typography variant="body2" noWrap sx={{ fontWeight: 600, color: 'inherit' }}>
+                {user.name || user.email}
+              </Typography>
+            </Box>
+          )}
           <IconButton
             size="large"
             edge="end"
@@ -568,13 +553,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: 0,
           width: { sm: `calc(100% - ${desktopOpen ? drawerWidth : collapsedDrawerWidth}px)` },
           transition: 'width 0.3s ease',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
-        <Toolbar />
-        {children}
+        <Toolbar /> {/* Spacer for fixed AppBar */}
+        <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+          {children}
+        </Box>
       </Box>
     </Box>
   );

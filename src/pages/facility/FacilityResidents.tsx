@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -41,6 +42,7 @@ import {
   Warning,
   CheckCircle,
   Cancel,
+  Info,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -75,6 +77,7 @@ interface Resident {
 const FacilityResidents: React.FC = () => {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
+  const navigate = useNavigate();
   const [residents, setResidents] = useState<Resident[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +85,12 @@ const FacilityResidents: React.FC = () => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [residentToDelete, setResidentToDelete] = useState<Resident | null>(null);
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
+  const [physicians, setPhysicians] = useState<Array<{ id: string; name: string; email: string }>>([]);
+  const [loadingPhysicians, setLoadingPhysicians] = useState(false);
+  const [facilities, setFacilities] = useState<Array<{ id: string; name: string; address?: string }>>([]);
+  const [loadingFacilities, setLoadingFacilities] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -91,6 +100,7 @@ const FacilityResidents: React.FC = () => {
     admissionDate: '',
     dischargeDate: '',
     roomNumber: '',
+    facilityId: '',
     primaryPhysician: '',
     emergencyContactName: '',
     emergencyContactPhone: '',
@@ -106,7 +116,50 @@ const FacilityResidents: React.FC = () => {
 
   useEffect(() => {
     fetchResidents();
+    fetchPhysicians();
   }, []);
+
+  const fetchPhysicians = async () => {
+    if (!user) return;
+    
+    setLoadingPhysicians(true);
+    try {
+      const response = await api.get('/residents/physicians');
+      if (response.data.success) {
+        setPhysicians(response.data.data.physicians || []);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch physicians:', err);
+      // Don't show error to user - it's optional
+    } finally {
+      setLoadingPhysicians(false);
+    }
+  };
+
+  const fetchFacilities = async () => {
+    if (!user) return;
+    
+    setLoadingFacilities(true);
+    try {
+      const response = await api.get(`/facility-access/user/${user.id}/facilities`);
+      if (response.data.success) {
+        const facilitiesList = response.data.data.facilities || [];
+        setFacilities(facilitiesList);
+        
+        // Auto-select facility if user has only one facility or has a current facilityId
+        if (facilitiesList.length === 1) {
+          setFormData(prev => ({ ...prev, facilityId: facilitiesList[0].id }));
+        } else if (user.facilityId && facilitiesList.some((f: { id: string }) => f.id === user.facilityId)) {
+          setFormData(prev => ({ ...prev, facilityId: user.facilityId || '' }));
+        }
+      }
+    } catch (err: any) {
+      console.error('Error fetching facilities:', err);
+      showError('Failed to load facilities');
+    } finally {
+      setLoadingFacilities(false);
+    }
+  };
 
   const fetchResidents = async () => {
     try {
@@ -133,6 +186,7 @@ const FacilityResidents: React.FC = () => {
       admissionDate: '',
       dischargeDate: '',
       roomNumber: '',
+      facilityId: '',
       primaryPhysician: '',
       emergencyContactName: '',
       emergencyContactPhone: '',
@@ -146,6 +200,8 @@ const FacilityResidents: React.FC = () => {
       status: 'active',
     });
     setOpenDialog(true);
+    fetchPhysicians();
+    fetchFacilities();
   };
 
   const handleEditResident = (resident: Resident) => {
@@ -153,12 +209,13 @@ const FacilityResidents: React.FC = () => {
     setFormData({
       firstName: resident.firstName || '',
       lastName: resident.lastName || '',
-      dob: resident.dob || '',
+      dob: resident.dob ? resident.dob.split('T')[0] : '',
       gender: resident.gender || '',
       photoUrl: resident.photoUrl || '',
-      admissionDate: resident.admissionDate || '',
-      dischargeDate: resident.dischargeDate || '',
+      admissionDate: resident.admissionDate ? resident.admissionDate.split('T')[0] : '',
+      dischargeDate: resident.dischargeDate ? resident.dischargeDate.split('T')[0] : '',
       roomNumber: resident.roomNumber || '',
+      facilityId: resident.facilityId || '',
       primaryPhysician: resident.primaryPhysician || '',
       emergencyContactName: resident.emergencyContactName || '',
       emergencyContactPhone: resident.emergencyContactPhone || '',
@@ -172,26 +229,91 @@ const FacilityResidents: React.FC = () => {
       status: resident.status || 'active',
     });
     setOpenDialog(true);
+    fetchPhysicians();
+    fetchFacilities();
   };
 
   const handleSaveResident = async () => {
     try {
+      // Validate required fields
+      if (!formData.firstName?.trim() || !formData.lastName?.trim()) {
+        showError('First name and last name are required');
+        return;
+      }
+
+      // Primary physician is now selected from dropdown, so validation is not needed
+      // Empty value is allowed (can be added later)
+
+      // Validate facilityId for new residents - use the selected facility ID directly
+      if (!selectedResident && !formData.facilityId) {
+        showError('Please select a facility');
+        return;
+      }
+
+      setSaving(true);
+
       if (selectedResident) {
-        await api.put(`/residents/${selectedResident.id}`, formData);
+        // For updates, use the facilityId from form if provided
+        const updateData = {
+          ...formData,
+          dob: formData.dob || null,
+          gender: formData.gender || null,
+          photoUrl: formData.photoUrl || null,
+          admissionDate: formData.admissionDate || null,
+          dischargeDate: formData.dischargeDate || null,
+          roomNumber: formData.roomNumber || null,
+          facilityId: formData.facilityId || undefined, // Use selected facility ID, or undefined to keep existing
+          primaryPhysician: formData.primaryPhysician && formData.primaryPhysician.trim() 
+            ? formData.primaryPhysician.trim() 
+            : null,
+          emergencyContactName: formData.emergencyContactName || null,
+          emergencyContactPhone: formData.emergencyContactPhone || null,
+          diagnosis: formData.diagnosis || null,
+          allergies: formData.allergies || null,
+          dietaryRestrictions: formData.dietaryRestrictions || null,
+          mobilityLevel: formData.mobilityLevel || null,
+          careLevel: formData.careLevel || null,
+          insuranceProvider: formData.insuranceProvider || null,
+          policyNumber: formData.policyNumber || null,
+        };
+        await api.put(`/residents/${selectedResident.id}`, updateData);
         showSuccess('Resident updated successfully');
       } else {
-        // Include facilityId when creating a new resident
+        // For new residents, use the selected facility ID directly from the form
         const residentData = {
           ...formData,
-          ...(user?.facilityId && { facilityId: user.facilityId })
+          // Remove empty strings for optional fields, send null instead
+          dob: formData.dob || null,
+          gender: formData.gender || null,
+          photoUrl: formData.photoUrl || null,
+          admissionDate: formData.admissionDate || null,
+          dischargeDate: formData.dischargeDate || null,
+          roomNumber: formData.roomNumber || null,
+          facilityId: formData.facilityId, // Use the selected facility ID directly (foreign key)
+          primaryPhysician: formData.primaryPhysician && formData.primaryPhysician.trim() 
+            ? formData.primaryPhysician.trim() 
+            : null,
+          emergencyContactName: formData.emergencyContactName || null,
+          emergencyContactPhone: formData.emergencyContactPhone || null,
+          diagnosis: formData.diagnosis || null,
+          allergies: formData.allergies || null,
+          dietaryRestrictions: formData.dietaryRestrictions || null,
+          mobilityLevel: formData.mobilityLevel || null,
+          careLevel: formData.careLevel || null,
+          insuranceProvider: formData.insuranceProvider || null,
+          policyNumber: formData.policyNumber || null,
         };
+        console.log('📤 Sending resident data:', residentData);
         await api.post('/residents', residentData);
         showSuccess('Resident created successfully');
       }
       setOpenDialog(false);
       fetchResidents();
     } catch (err: any) {
+      console.error('❌ Save resident error:', err);
       showError(err.response?.data?.message || 'Failed to save resident');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -209,6 +331,7 @@ const FacilityResidents: React.FC = () => {
     if (!residentToDelete) return;
     
     try {
+      setDeleting(true);
       await api.delete(`/residents/${residentToDelete.id}`);
       showSuccess('Resident deleted successfully (soft delete - can be restored)');
       setOpenDeleteDialog(false);
@@ -216,6 +339,8 @@ const FacilityResidents: React.FC = () => {
       fetchResidents();
     } catch (err: any) {
       showError(err.response?.data?.message || 'Failed to delete resident');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -291,7 +416,43 @@ const FacilityResidents: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {residents.map((resident) => (
+            {residents.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <Person sx={{ fontSize: 64, color: 'text.secondary', opacity: 0.5 }} />
+                    <Typography variant="h6" color="text.secondary">
+                      No residents found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, textAlign: 'center' }}>
+                      {error 
+                        ? 'Failed to load residents. Please try again or contact support if the problem persists.'
+                        : 'Get started by adding your first resident to the facility.'}
+                    </Typography>
+                    {!error && (
+                      <Button
+                        variant="contained"
+                        startIcon={<Add />}
+                        onClick={handleCreateResident}
+                        sx={{ mt: 2 }}
+                      >
+                        Add First Resident
+                      </Button>
+                    )}
+                    {error && (
+                      <Button
+                        variant="outlined"
+                        onClick={fetchResidents}
+                        sx={{ mt: 2 }}
+                      >
+                        Retry
+                      </Button>
+                    )}
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : (
+              residents.map((resident) => (
               <TableRow key={resident.id}>
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -344,6 +505,14 @@ const FacilityResidents: React.FC = () => {
                   )}
                 </TableCell>
                 <TableCell>
+                  <Tooltip title="View Details (Documents, Contacts, Medications, Care Plans)">
+                    <IconButton 
+                      onClick={() => navigate(`/residents/${resident.id}`)}
+                      color="primary"
+                    >
+                      <Info />
+                    </IconButton>
+                  </Tooltip>
                   {(user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'doctor') && (
                     <Tooltip title="Edit Resident">
                       <IconButton onClick={() => handleEditResident(resident)}>
@@ -360,13 +529,19 @@ const FacilityResidents: React.FC = () => {
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+            ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
 
       {/* Add/Edit Resident Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
+      <Dialog 
+        open={openDialog} 
+        onClose={() => !saving && setOpenDialog(false)} 
+        maxWidth="md" 
+        fullWidth
+      >
         <DialogTitle>
           {selectedResident ? 'Edit Resident' : 'Add New Resident'}
         </DialogTitle>
@@ -452,6 +627,31 @@ const FacilityResidents: React.FC = () => {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required={!selectedResident}>
+                  <InputLabel>Facility</InputLabel>
+                  <Select
+                    value={formData.facilityId || ''}
+                    onChange={(e) => setFormData({ ...formData, facilityId: e.target.value })}
+                    label="Facility"
+                    disabled={loadingFacilities || (!user || (user.role !== 'admin' && user.role !== 'doctor' && facilities.length === 1))}
+                  >
+                    {facilities.map((facility) => (
+                      <MenuItem key={facility.id} value={facility.id}>
+                        {facility.name} {facility.address ? `(${facility.address})` : ''}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {loadingFacilities && (
+                    <CircularProgress size={20} sx={{ position: 'absolute', right: 24, top: 40 }} />
+                  )}
+                  {facilities.length === 0 && !loadingFacilities && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, ml: 1.5, display: 'block' }}>
+                      No facilities available. Please contact an administrator.
+                    </Typography>
+                  )}
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
                   <InputLabel>Status</InputLabel>
                   <Select
@@ -465,12 +665,32 @@ const FacilityResidents: React.FC = () => {
                 </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Primary Physician (User ID)"
-                  value={formData.primaryPhysician}
-                  onChange={(e) => setFormData({ ...formData, primaryPhysician: e.target.value })}
-                />
+                <FormControl fullWidth>
+                  <InputLabel>Primary Physician</InputLabel>
+                  <Select
+                    value={formData.primaryPhysician || ''}
+                    onChange={(e) => setFormData({ ...formData, primaryPhysician: e.target.value || '' })}
+                    label="Primary Physician"
+                    disabled={loadingPhysicians}
+                  >
+                    <MenuItem value="">
+                      <em>None (Can be added later)</em>
+                    </MenuItem>
+                    {physicians.map((physician) => (
+                      <MenuItem key={physician.id} value={physician.id}>
+                        {physician.name} ({physician.email})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {loadingPhysicians && (
+                    <CircularProgress size={20} sx={{ position: 'absolute', right: 24, top: 40 }} />
+                  )}
+                  {physicians.length === 0 && !loadingPhysicians && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, ml: 1.5, display: 'block' }}>
+                      No physicians available. Can be added later.
+                    </Typography>
+                  )}
+                </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -567,15 +787,25 @@ const FacilityResidents: React.FC = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSaveResident}>
-            {selectedResident ? 'Update' : 'Create'}
+          <Button onClick={() => setOpenDialog(false)} disabled={saving}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleSaveResident}
+            disabled={saving}
+            startIcon={saving ? <CircularProgress size={16} /> : null}
+          >
+            {saving ? (selectedResident ? 'Updating...' : 'Creating...') : (selectedResident ? 'Update' : 'Create')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={openDeleteDialog} onClose={handleDeleteCancel}>
+      <Dialog 
+        open={openDeleteDialog} 
+        onClose={() => !deleting && handleDeleteCancel()}
+      >
         <DialogTitle>Delete Resident</DialogTitle>
         <DialogContent>
           <Typography>
@@ -594,11 +824,17 @@ const FacilityResidents: React.FC = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} variant="outlined">
+          <Button onClick={handleDeleteCancel} variant="outlined" disabled={deleting}>
             Cancel
           </Button>
-          <Button onClick={handleDeleteConfirm} variant="contained" color="error">
-            Delete
+          <Button 
+            onClick={handleDeleteConfirm} 
+            variant="contained" 
+            color="error"
+            disabled={deleting}
+            startIcon={deleting ? <CircularProgress size={16} /> : null}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

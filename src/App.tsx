@@ -13,6 +13,7 @@ import RoleManagement from './pages/RoleManagement';
 import AccessManagement from './pages/AccessManagement';
 import FacilityUsers from './pages/facility/FacilityUsers';
 import FacilityResidents from './pages/facility/FacilityResidents';
+import ResidentDetail from './pages/residents/ResidentDetail';
 import FacilityContacts from './pages/facility/FacilityContacts';
 import FacilityDocuments from './pages/facility/FacilityDocuments';
 import FacilityTasks from './pages/facility/FacilityTasks';
@@ -115,6 +116,16 @@ const App: React.FC = () => {
             element={
               user?.facilityId ? (
                 <FacilityResidents />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/residents/:id"
+            element={
+              user?.facilityId ? (
+                <ResidentDetail />
               ) : (
                 <Navigate to="/dashboard" replace />
               )
